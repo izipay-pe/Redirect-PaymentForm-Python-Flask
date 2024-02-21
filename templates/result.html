@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block extrahead %}
+{% endblock %}
+{% block extrastyles %}
+{% endblock %}
+
+{% block body %}
+<section class="container" >
+    <div class="row">
+      <div class="col mx-auto">
+        <h1 style="color: white">Resultado de pago</h1>
+          {% if data.result == '00' %}
+              <p>Estado: {{ data.status }}</p>
+              <p>Monto: S/. {{ "%.2f" % (data.monto | float / 100) }}</p>
+              <p>ID Orden:  {{ data.order }}</p>
+          {% else %}
+              <p>Estado:  {{ data.status }}</p>
+              <p>Codigo: {{ data.result }}</p>
+          {% endif %}
+
+          <form action="/" method="get">
+            <button class="btn btn-izi">
+                Volver a probar
+            </button>
+          </form>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+    </script>
+{% endblock %}
