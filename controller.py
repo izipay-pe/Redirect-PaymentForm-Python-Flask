@@ -9,7 +9,7 @@ from decimal import Decimal
 
 def dataForm(parameters):
     # Obteniendo usuario
-    username = credentials["USERNAME"]
+    username = credentials["SHOP_ID"]
 
     # Crear un diccionario ordenado para los parámetros
     new_params = OrderedDict()
@@ -51,7 +51,7 @@ def dataForm(parameters):
     new_params["vads_redirect_success_timeout"] = "5"  # Tiempo de redirección
 
     # Calcular el signature
-    signature = calcularSignature(new_params)
+    signature = calculateSignature(new_params)
 
     # Agregar el signature
     new_params["signature"] = signature
@@ -59,8 +59,7 @@ def dataForm(parameters):
     # Retornar los parámetros
     return new_params
     
-
-def calcularSignature(parameters):
+def calculateSignature(parameters):
     # Obtener la clave API
     key = credentials["KEY"]
 
@@ -81,3 +80,9 @@ def calcularSignature(parameters):
     # Retornar Firma
     return signature
 
+def checkSignature(parameters):
+    # Obtener el signature de la respuesta
+    signature = parameters["signature"]
+
+    # Verifica la integridad de el signature recibido y el generado
+    return signature == calculateSignature(parameters) 
