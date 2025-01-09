@@ -60,8 +60,10 @@ Reemplace **[CHANGE_ME]** con sus credenciales de `API` extraídas desde el Back
 - Editar el archivo `key.py` en la ruta raíz:
 ```python
 credentials = {
-    "USERNAME": "CHANGE_ME_USER_ID",
-    "KEY": "CHANGE_ME_PASSWORD",
+    # Identificador de su tienda
+    "SHOP_ID": "~ CHANGE_ME_USER_ID ~",
+    # Clave de Test o Producción
+    "KEY": "~ CHANGE_ME_KEY ~",
     }
 ```
 
@@ -116,50 +118,37 @@ Antes de ejecutar el proyecto, se creará el virtual environment (venv):
 
 ## 💻4.1. Desplegar pasarela
 ### Autentificación
-Extraer las claves de `identificador de tienda` y `clave de test o producción` del Backoffice Vendedor y agregarlo en los parámetros `vads_site_id` y en la función `calcularSignature(parameters)`. Este último permite calcular la firma transmitida de los datos de pago. Podrás encontrarlo en el archivo `controller.py`.
+Extraer las claves de `identificador de tienda` y `clave de test o producción` del Backoffice Vendedor y agregarlo en los parámetros `vads_site_id` y en la función `calculateSignature(parameters)`. Este último permite calcular la firma transmitida de los datos de pago. Podrás encontrarlo en el archivo `controller.py`.
 ```python
 def dataForm(parameters):
     # Obteniendo usuario
-    username = credentials["USERNAME"]
+    username = credentials["SHOP_ID"]
 
-    # Crear un diccionario ordenado para los parámetros
     new_params = OrderedDict()
 
     # Definir los parámetros vads_ y sus valores
     new_params = {
-            ...
-            ...
             "vads_site_id": username,  # ID de tienda
             ...
             ...
-            "vads_currency": parameters["currency"],
-            "vads_cust_national_id": parameters["identityCode"],
         }
 
-    ...
-    ...
-
     # Calcular el signature
-    signature = calcularSignature(new_params)
+    signature = calculateSignature(new_params)
 
     # Agregar el signature
     new_params["signature"] = signature
 
     # Retornar los parámetros
     return new_params
-    
 
-def calcularSignature(parameters):
+def calculateSignature(parameters):
     # Obtener la clave API
     key = credentials["KEY"]
     ...
     ...
-    content_signature += key
-    
-    # Calcular Firma
-    hash_object = hmac.new(key.encode('utf-8'), content_signature.encode('utf-8'), hashlib.sha256)
-    ...
-    ...
+    # Retornar Firma
+    return signature
 ```
 
 ℹ️ Para más información: [Autentificación](https://secure.micuentaweb.pe/doc/es-PE/form-payment/quick-start-guide/identificarse-durante-los-intercambios.html)
@@ -182,22 +171,14 @@ Para desplegar la pasarela, crea un formulario **HTML** de tipo **POST** con el 
 ## 💳4.2. Analizar resultado del pago
 
 ### Validación de firma
-Se configura el método `calcularSignature(parameters)` que generará la firma de los datos de la respuesta de pago. Podrás encontrarlo en el archivo `controller.py`.
+Se configura el método `calculateSignature(parameters)` que generará la firma de los datos de la respuesta de pago. Podrás encontrarlo en el archivo `controller.py`.
 
 ```python
-def calcularSignature(parameters):
+def calculateSignature(parameters):
     # Obtener la clave API
     key = credentials["KEY"]
-
-    # Ordenar los parámetros alfabéticamente
-    sort_parameters = {k: parameters[k] for k in sorted(parameters)}
-
-    # Crear el contenido para la firma
-    content_signature = "".join(
-        f"{value}+" for key, value in sort_parameters.items() if key.startswith("vads_")
-    )
-    content_signature += key
-    
+    ...
+    ...
     # Calcular Firma
     hash_object = hmac.new(key.encode('utf-8'), content_signature.encode('utf-8'), hashlib.sha256)
     hash_bytes = hash_object.digest()
@@ -207,30 +188,21 @@ def calcularSignature(parameters):
     return signature
 ```
 
-Se valida que la firma recibida es correcta en el archivo `app.py`.
+Se valida que la firma recibida es correcta en `checkSignature(parameters)`. Podrás encontrarlo en el archivo `controller.py`.
 
 ```python
-@app.post('/result')
-def paidResult():
-    
-    ...
-    ...
-    # Calcular el signature con los valores de la transacción
-    resultSignature = calcularSignature(resultParameters)
-    ...
-    ...
-    
+def checkSignature(parameters):
+    # Obtener el signature de la respuesta
+    signature = parameters["signature"]
+
     # Verifica la integridad de el signature recibido y el generado
-    if resultPostSignature == resultSignature:
-        return render_template('result.html', data = resultParameters, pjson=pjson, currency=currencyType)
-    else:
-        return 'ERROR', 500
+    return signature == calculateSignature(parameters) 
 ```
 En caso que la validación sea exitosa, se renderiza el template con los valores. Como se muestra en el archivo `templates/result.html`.
 
 ```html
 <p><strong>Estado:</strong> <span>{{ data.vads_trans_status }}</span></p>
-<p><strong>Monto:</strong> <span>{{ currency }}</span><span>{{ (data.vads_amount | float) / 100 }}</span></p>
+<p><strong>Monto:</strong> <span>{% if data.vads_currency == '604' %}PEN{% else %}USD{% endif %}</span><span>{{ (data.vads_amount | float) / 100 }}</span></p>
 <p><strong>Order-id:</strong> <span>{{ data.vads_order_id }}</span></p>
 ```
 ℹ️ Para más información: [Analizar resultado del pago](https://secure.micuentaweb.pe/doc/es-PE/form-payment/quick-start-guide/recuperar-los-datos-devueltos-en-la-respuesta.html)
@@ -243,20 +215,17 @@ Se realiza la verificación de la firma y se imprime en el log el estado del pag
 ```python
 @app.post('/ipn')
 def ipn():
-    ...
-    ...
-    # Calcular el signature con los valores de la transacción
-    ipnSignature = calcularSignature(ipnParameters)
-    # Obtener el estado de la trasnacción
+    if not request.form: raise Exception("no post data received!")
+
+    ipnParameters = request.form.to_dict()
+    
+    if not checkSignature(ipnParameters) : raise Exception("Invalid signature")
+
+    # Obtener el estado de la transacción
     orderStatus = ipnParameters["vads_trans_status"]
     
-    # Verifica la integridad del signature recibido y el generado
-    if ipnPostSignature == ipnSignature:
-        print("OK! Order Status is " + orderStatus )
-        return 'Correcto', 200
-    else:
-        print("Notification Error")
-        return 'Acceso denegado', 500
+    # Retorna la respuesta del Order Status
+    return 'OK! OrderStatus is ' + orderStatus, 200
 ```
 
 La IPN debe ir configurada en el Backoffice Vendedor, en `Configuración -> Reglas de notificación -> URL de notificación al final del pago`
@@ -286,8 +255,10 @@ Reemplace **[CHANGE_ME]** con sus credenciales de PRODUCCIÓN extraídas desde e
 - Editar el archivo `key.py` en la ruta raíz:
 ```python
 credentials = {
-    "USERNAME": "CHANGE_ME_USER_ID",
-    "KEY": "CHANGE_ME_PASSWORD",
+    # Identificador de su tienda
+    "SHOP_ID": "~ CHANGE_ME_USER_ID ~",
+    # Clave de Test o Producción
+    "KEY": "~ CHANGE_ME_KEY ~",
     }
 ```
 
