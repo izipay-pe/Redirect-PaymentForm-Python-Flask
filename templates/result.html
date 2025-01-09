@@ -16,15 +16,15 @@
                 <hr>
                 <p><strong>Estado:</strong> <span>{{ data.vads_trans_status }}</span></p>
                 <p><strong>Monto:</strong> 
-		    <span>{{ currency }}</span>
-		    <span>{{ (data.vads_amount | float) / 100 }}</span>
+		   <span>{% if data.vads_currency == '604' %}PEN{% else %}USD{% endif %}</span>
+		   <span>{{ (data.vads_amount | float) / 100 }}</span>
                 </p>
                 <p><strong>Order-id:</strong> <span>{{ data.vads_order_id }}</span></p>
                 <hr>
                 <details>
                     <summary><h2>Respuesta recibida del servidor:</h2></summary>
-		    <hr>
-		    <pre>{{ pjson }}</pre>
+		   <hr>
+		   <pre>{{ pjson }}</pre>
                 </details>
                 <hr>
                 <form action="/" method="get">
