@@ -210,7 +210,7 @@ En caso que la validación sea exitosa, se renderiza el template con los valores
 ### IPN
 La IPN es una notificación de servidor a servidor (servidor de Izipay hacia el servidor del comercio) que facilita información en tiempo real y de manera automática cuando se produce un evento, por ejemplo, al registrar una transacción.
 
-Se realiza la verificación de la firma y se imprime en el log el estado del pago. Podrás encontrarlo en el archivo `app.py`.
+Se realiza la verificación de la firma y se retorna una respuesta del estado del pago. Podrás encontrarlo en el archivo `app.py`.
 
 ```python
 @app.post('/ipn')
