@@ -36,19 +36,11 @@ def dataForm(parameters):
             "vads_amount": int(Decimal(parameters["amount"]) * 100),
             "vads_currency": parameters["currency"],
             "vads_cust_national_id": parameters["identityCode"],
+            "vads_trans_date": datetime.utcnow().strftime("%Y%m%d%H%M%S"),
+            "vads_trans_id": hex(int(datetime.utcnow().timestamp() * 1000))[-6:],
+            "vads_version": "V2",
+            "vads_redirect_success_timeout": "5",
         }
-
-
-    # Generar vads_trans_date con la fecha actual (en formato YmdHis)
-    trans_date = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    new_params["vads_trans_date"] = trans_date
-
-    # Generar vads_trans_id como un hash de tiempo
-    trans_id = hex(int(datetime.utcnow().timestamp() * 1000))[-6:]
-    new_params["vads_trans_id"] = trans_id
-
-    new_params["vads_version"] = "V2"
-    new_params["vads_redirect_success_timeout"] = "5"  # Tiempo de redirección
 
     # Calcular el signature
     signature = calculateSignature(new_params)
