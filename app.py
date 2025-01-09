@@ -58,8 +58,10 @@ def ipn():
     
     if not checkSignature(ipnParameters) : raise Exception("Invalid signature")
 
-    # Obtener el estado de la transacción
+    # Almacena algunos datos de la respuesta IPN en variables
     orderStatus = ipnParameters["vads_trans_status"]
+    orderId = ipnParameters["vads_order_id"]
+    uuid = ipnParameters["vads_trans_uuid"]
     
     # Retorna la respuesta del Order Status
     return 'OK! OrderStatus is ' + orderStatus, 200
