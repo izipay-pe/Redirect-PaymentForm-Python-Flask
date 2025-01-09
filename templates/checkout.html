@@ -23,7 +23,7 @@
 	<!-- Moneda -->
 	<div class="form-group">
 		<label for="amount">Moneda</label>
-		<input readonly class="form-control" name="currency" value="{{ currency }}" />
+		<input readonly class="form-control" name="currency" value="{% if parameters.vads_currency == '604' %}PEN{% else %}USD{% endif %}" />
 	</div>
 </div>
 <section class="container" >
